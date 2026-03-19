@@ -45,14 +45,15 @@
                 <div v-if="task.assignee" class="assignee">负责人: {{ task.assignee }}</div>
                 <div v-if="task.creator" class="creator">创建人: {{ task.creator }}</div>
                 <div v-if="task.createdAt" class="created-at">创建时间: {{ formatDate(task.createdAt) }}</div>
-                <div class="progress">
+                <div class="progress" v-if="task.status !== 'DONE' || task.progressPercent">
                   <div class="progress-bar">
                     <div 
                       class="progress-fill" 
-                      :style="{ width: (task.progressPercent || 0) + '%' }"
+                      :style="{ width: (task.status === 'DONE' ? 100 : (task.progressPercent || 0)) + '%' }"
+                      :class="{ 'progress-complete': task.status === 'DONE' }"
                     ></div>
                   </div>
-                  <span class="progress-text">{{ task.progressPercent !== null && task.progressPercent !== undefined ? task.progressPercent + '%' : '-' }}</span>
+                  <span class="progress-text">{{ task.status === 'DONE' ? '100%' : (task.progressPercent !== null && task.progressPercent !== undefined ? task.progressPercent + '%' : '-') }}</span>
                 </div>
                 <div v-if="task.startedAt" class="started-at">开始时间: {{ formatDate(task.startedAt) }}</div>
                 <div v-if="task.completedAt" class="completed-at">完成时间: {{ formatDate(task.completedAt) }}</div>
