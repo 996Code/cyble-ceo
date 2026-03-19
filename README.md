@@ -9,8 +9,38 @@
 ![Tech Stack](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![Built By](https://img.shields.io/badge/Built_by-OpenClaw_Agents-ff6b6b?style=flat)
 
-## ✨ 功能
+## 🏗️ 系统架构
 
+```mermaid
+graph LR
+    subgraph "Client"
+        A["🌐 Web Browser<br/>Vue 3 + Vite"]
+    end
+    
+    subgraph "Server"
+        B["/nginx<br/>静态资源服务"]
+        C["🎯 Spring Boot API<br/>RESTful服务"]
+        D["💾 H2 Database<br/>持久化存储"]
+        E["📁 OpenClaw Agents<br/>实时状态监控"]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    C --> E
+```
+
+**数据流向**: Agent状态变化 → API接收 → 数据库存储 → 前端展示
+
+**技术栈**:
+- **前端**: Vue 3 + Vue Router + Vite + CSS
+- **后端**: Spring Boot 3 + Spring Data JPA + JDK 17
+- **数据库**: H2 (嵌入式文件数据库)
+- **部署**: Docker + Docker Compose + Nginx
+
+## ✨ 功能特性详细说明
+
+### 任务看板功能
 - 📊 **全局概览** — 一页总览所有 Agent 运行状态和关键指标
 - 🤖 **Agent 详情** — 查看每个 Agent 的实时状态、当前任务和历史记录
 - 📋 **任务看板** — 可视化任务流转（待分派 → 执行中 → 待审查 → 已完成）
@@ -20,6 +50,49 @@
 - 📈 **进度追踪** — 实时进度条展示任务完成度
 - 🗄️ **任务归档** — 已完成任务自动归档，看板保持清爽
 - 📄 **分页 & 时间过滤** — 大量任务数据轻松管理
+
+### 任务状态机流转
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED : 创建任务
+    CREATED --> ASSIGNED : 分配给Agent
+    ASSIGNED --> DOING : 开始执行
+    DOING --> REVIEW : 执行完成待审核
+    REVIEW --> DONE : 审核通过
+    REVIEW --> REJECTED : 审核不通过
+    REJECTED --> ASSIGNED : 重新分配
+    DOING --> BLOCKED : 遇到阻塞
+    BLOCKED --> DOING : 解决阻塞
+    ASSIGNED --> CANCELLED : 取消任务
+    DOING --> CANCELLED : 取消任务
+    REVIEW --> CANCELLED : 取消任务
+    [*] --> CANCELLED : 直接取消
+    DONE --> ARCHIVED : 归档任务
+```
+
+### 分页和归档机制
+- **智能分页**: 支持按页码、页面大小分页显示任务
+- **时间过滤**: 支持按时间范围筛选任务（如最近7天、30天等）
+- **自动归档**: 完成的任务可自动归档，保持看板整洁
+- **软删除**: 归档任务保留数据但不在主看板显示
+
+### Agent 状态同步
+- **心跳机制**: Agent定期上报心跳，实时反映在线状态
+- **状态监控**: 监控Agent的活跃度和健康状况
+- **实时更新**: 状态变更即时同步到前端展示
+
+## 🖼️ 界面截图
+
+### 概览页面
+![Dashboard Overview](./docs/screenshots/overview.png)
+
+### 任务看板
+![Task Board](./docs/screenshots/taskboard.png)
+
+### Agent 详情页
+![Agent Detail](./docs/screenshots/agent-detail.png)
+
+这些截图展示了系统的实际运行效果，包括全局概览、任务看板和Agent详情等核心功能界面。
 
 ## 🛠 技术栈
 
@@ -32,7 +105,7 @@
 
 ## 🚀 快速开始
 
-### 前置条件
+### 环境要求
 
 - [Docker](https://docs.docker.com/get-docker/) 20.10+
 - [Docker Compose](https://docs.docker.com/compose/install/) v2+
@@ -77,13 +150,149 @@ docker compose up -d
 docker compose logs -f
 ```
 
-### 环境变量
+### 配置说明
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
 | `OPENCLAW_AGENTS_PATH` | OpenClaw agents 目录路径 | `./data/agents` |
 | `DB_PASSWORD` | H2 数据库密码（可选） | _(空)_ |
 | `PORT` | 前端访问端口 | `80` |
+
+## 📡 API 文档
+
+### 主要 API 端点列表
+
+| 方法 | 路径 | 功能说明 |
+|------|------|----------|
+| `GET` | `/api/v1/dashboard/overview` | 获取全局概览 |
+| `GET` | `/api/v1/dashboard/agents/{id}` | 获取 Agent 详情 |
+| `GET` | `/api/v1/tasks` | 获取任务列表（支持分页/过滤） |
+| `POST` | `/api/v1/tasks` | 创建任务（支持 initialStatus 参数） |
+| `GET` | `/api/v1/tasks/{id}` | 获取任务详情 |
+| `PUT` | `/api/v1/tasks/{id}/state` | 更新任务状态 |
+| `PUT` | `/api/v1/tasks/{id}/progress` | 更新任务进度 |
+| `PUT` | `/api/v1/tasks/{id}/done` | 完成任务 |
+| `POST` | `/api/v1/tasks/archive` | 归档任务 |
+| `DELETE` | `/api/v1/tasks/clear-all` | 清空所有任务（仅开发环境） |
+
+### 请求/响应示例
+
+#### 获取任务列表
+**请求**: `GET /api/v1/tasks?page=0&size=20&days=7&includeArchived=false`
+
+**响应**:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "content": [
+      {
+        "id": "T-001",
+        "title": "实现登录功能",
+        "description": "开发用户登录模块",
+        "status": "DOING",
+        "assignee": "backend-dev",
+        "progress": 75,
+        "createdAt": "2024-01-01T10:00:00",
+        "updatedAt": "2024-01-01T15:30:00"
+      }
+    ],
+    "totalElements": 1,
+    "totalPages": 1,
+    "currentPage": 0,
+    "size": 20
+  },
+  "timestamp": "2024-01-01T16:00:00"
+}
+```
+
+#### 创建任务
+**请求**: `POST /api/v1/tasks`
+
+**请求体**:
+```json
+{
+  "title": "修复登录bug",
+  "description": "修复用户无法登录的问题",
+  "assignee": "backend-dev",
+  "initialStatus": "DOING"
+}
+```
+
+**响应**:
+```json
+{
+  "code": 200,
+  "message": "任务创建成功",
+  "data": {
+    "id": "T-002",
+    "title": "修复登录bug",
+    "description": "修复用户无法登录的问题",
+    "status": "DOING",
+    "assignee": "backend-dev",
+    "progress": 0,
+    "createdAt": "2024-01-01T16:00:00",
+    "updatedAt": "2024-01-01T16:00:00"
+  },
+  "timestamp": "2024-01-01T16:00:00"
+}
+```
+
+#### 更新任务状态
+**请求**: `PUT /api/v1/tasks/T-001/state`
+
+**请求体**:
+```json
+{
+  "status": "REVIEW"
+}
+```
+
+**响应**:
+```json
+{
+  "code": 200,
+  "message": "任务状态更新成功",
+  "data": {
+    "id": "T-001",
+    "status": "REVIEW",
+    "updatedAt": "2024-01-01T17:00:00"
+  },
+  "timestamp": "2024-01-01T17:00:00"
+}
+```
+
+### 状态码说明
+
+- `200`: 请求成功
+- `400`: 请求参数错误或校验失败
+- `404`: 资源未找到
+- `409`: 状态转换冲突（如无效的状态流转）
+- `500`: 服务器内部错误
+
+### 分页参数
+
+所有列表接口支持以下分页参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `page` | Integer | 0 | 页码（从0开始） |
+| `size` | Integer | 20 | 每页数量 |
+| `days` | Integer | - | 只返回最近N天的数据 |
+| `includeArchived` | Boolean | false | 是否包含已归档任务 |
+
+### 任务状态说明
+
+- `CREATED`: 已创建
+- `ASSIGNED`: 已分配
+- `DOING`: 执行中
+- `BLOCKED`: 已阻塞
+- `REVIEW`: 待审查
+- `REJECTED`: 已拒绝
+- `DONE`: 已完成
+- `CANCELLED`: 已取消
+- `ARCHIVED`: 已归档
 
 ## 📁 项目结构
 
