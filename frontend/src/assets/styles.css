@@ -1,0 +1,93 @@
+/* 全局样式 */
+@import './variables.css';
+
+:root {
+  --primary-color: var(--cyber-primary); /* 霓虹青色 */
+  --primary-gradient: linear-gradient(135deg, var(--cyber-bg-secondary) 0%, var(--cyber-bg-tertiary) 100%);
+  --success-color: var(--cyber-status-idle); /* 状态色-空闲 */
+  --warning-color: var(--cyber-status-busy); /* 状态色-忙碌 */
+  --error-color: var(--cyber-status-error);   /* 状态色-异常 */
+  --bg-color: var(--cyber-bg-primary);       /* GitHub 深色 */
+  --card-bg: var(--cyber-bg-card);           /* 半透明深色 */
+  --text-primary: var(--cyber-text-primary); /* 主标题 */
+  --text-secondary: var(--cyber-text-body);  /* 正文 */
+  --text-tertiary: var(--cyber-text-secondary); /* 次要文字 */
+  --border-color: var(--cyber-border-primary);   /* 霓虹边框 */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* 工具类 */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gap-10 {
+  gap: 10px;
+}
+
+.gap-20 {
+  gap: 20px;
+}

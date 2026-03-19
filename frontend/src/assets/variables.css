@@ -1,0 +1,33 @@
+/* 全局变量定义 - 赛博风格配色方案 */
+
+:root {
+  /* 背景颜色 */
+  --cyber-bg-primary: #0d1117; /* GitHub 深色 */
+  --cyber-bg-secondary: #0a0e17; /* 深色渐变起点 */
+  --cyber-bg-tertiary: #1a1f35; /* 深色渐变终点 */
+  --cyber-bg-card: rgba(17, 24, 39, 0.8); /* 半透明深色卡片 */
+  
+  /* 主题颜色 */
+  --cyber-primary: #00d9ff; /* 霓虹青色 - 主标题 */
+  --cyber-accent-green: #00ff88; /* 霓虹绿色 - 空闲状态 */
+  --cyber-accent-pink: #ff4466; /* 霓虹粉色 - 异常状态 */
+  
+  /* 文字颜色 */
+  --cyber-text-primary: #00d9ff; /* 主标题：霓虹青色 */
+  --cyber-text-body: #e5e7eb; /* 正文：浅灰色 */
+  --cyber-text-secondary: #9ca3af; /* 次要文字：暗灰色 */
+  
+  /* 状态颜色 */
+  --cyber-status-idle: #00ff88; /* 空闲：绿色 */
+  --cyber-status-busy: #00d9ff; /* 忙碌：蓝色 */
+  --cyber-status-error: #ff4466; /* 异常：粉色 */
+  
+  /* 边框颜色 */
+  --cyber-border-primary: rgba(0, 217, 255, 0.2); /* 霓虹边框 */
+  --cyber-border-secondary: rgba(0, 217, 255, 0.3);
+  
+  /* 特效 */
+  --cyber-blur: blur(10px); /* 毛玻璃效果 */
+  --cyber-glow-primary: 0 0 20px rgba(0, 217, 255, 0.3);
+  --cyber-glow-secondary: 0 0 10px rgba(0, 217, 255, 0.5);
+}

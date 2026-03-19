@@ -1,0 +1,27 @@
+# Java
+backend/target/
+*.class
+*.jar
+*.war
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+
+# Data
+data/
+*.log
+h2-data/

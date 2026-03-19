@@ -1,0 +1,41 @@
+services:
+  api:
+    build: ./backend
+    container_name: cyble-ceo-api
+    environment:
+      - TZ=Asia/Shanghai
+      - DB_PASSWORD=${DB_PASSWORD:-}
+    expose:
+      - "8080"
+    volumes:
+      - ${OPENCLAW_AGENTS_PATH:-./data/agents}:/openclaw/agents:ro
+      - h2-data:/app/data
+    restart: unless-stopped
+    networks:
+      - ceo-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/dashboard/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    build: ./frontend
+    container_name: cyble-ceo-frontend
+    ports:
+      - "${PORT:-80}:80"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ceo-network
+
+volumes:
+  h2-data:
+    driver: local
+
+networks:
+  ceo-network:
+    driver: bridge
