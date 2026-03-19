@@ -776,14 +776,41 @@ public class AgentStatusSyncService {
                         boolean aborted = sessionValue.path("abortedLastRun").asBoolean(false);
                         String newStatus;
                         
-                        // aborted 的会话立即标记为 DONE
+                        // 1. aborted 的会话立即标记为 DONE
                         if (aborted) {
                             newStatus = TASK_DONE_STATUS;
-                        } else if (finishedAt > 0) {
+                        }
+                        // 2. 明确结束的会话标记为 DONE
+                        else if (finishedAt > 0) {
                             newStatus = TASK_DONE_STATUS;
-                        } else {
-                            // 会话未结束，根据ageMs判断状态
-                            newStatus = ageMs < FIVE_MINUTES_MS ? TASK_DOING_STATUS : TASK_DONE_STATUS;
+                        }
+                        // 3. 超过 10 分钟未更新的会话认为已结束（OpenClaw 可能没设置 finishedAt）
+                        else if (ageMs > 10 * 60 * 1000) {
+                            newStatus = TASK_DONE_STATUS;
+                        }
+                        // 4. 5 分钟内活跃的会话是 DOING
+                        else if (ageMs < FIVE_MINUTES_MS) {
+                            newStatus = TASK_DOING_STATUS;
+                        }
+                        // 5. 5-10 分钟的会话，检查 session 文件最后修改时间
+                        else {
+                            String sessionFile = sessionValue.path("sessionFile").asText("");
+                            if (!sessionFile.isEmpty()) {
+                                java.nio.file.Path sf = java.nio.file.Paths.get(sessionFile);
+                                if (java.nio.file.Files.exists(sf)) {
+                                    try {
+                                        long lastModified = java.nio.file.Files.getLastModifiedTime(sf).toMillis();
+                                        long fileAgeMs = System.currentTimeMillis() - lastModified;
+                                        newStatus = (fileAgeMs < FIVE_MINUTES_MS) ? TASK_DOING_STATUS : TASK_DONE_STATUS;
+                                    } catch (Exception e) {
+                                        newStatus = TASK_DONE_STATUS;
+                                    }
+                                } else {
+                                    newStatus = TASK_DONE_STATUS;
+                                }
+                            } else {
+                                newStatus = TASK_DONE_STATUS;
+                            }
                         }
                         
                         if (!newStatus.equals(existing.getStatus())) {
