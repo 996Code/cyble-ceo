@@ -224,6 +224,141 @@ erDiagram
 | POST | `/api/v1/tasks/archive` | 归档任务 | 无需 |
 | DELETE | `/api/v1/tasks/clear-all` | 清空所有任务（开发环境） | 无需 |
 
+### 3.4 任务状态机设计
+
+#### 3.4.1 状态定义
+
+任务状态机定义了任务的完整生命周期，包括以下状态：
+
+- **CREATED**: 任务刚被创建，等待分配
+- **ASSIGNED**: 任务已分配给具体负责人
+- **DOING**: 任务正在执行中
+- **REVIEW**: 任务完成，等待审查
+- **DONE**: 任务已完成且通过审查
+- **BLOCKED**: 任务被阻塞，无法继续
+- **REJECTED**: 任务被拒绝，需要返工
+- **CANCELLED**: 任务被取消
+
+#### 3.4.2 状态流转图
+
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED : 创建任务
+    CREATED --> ASSIGNED : 分配任务
+    CREATED --> CANCELLED : 取消任务
+    ASSIGNED --> DOING : 开始执行
+    ASSIGNED --> BLOCKED : 任务阻塞
+    ASSIGNED --> CANCELLED : 取消任务
+    DOING --> REVIEW : 执行完成
+    DOING --> BLOCKED : 任务阻塞
+    DOING --> CANCELLED : 取消任务
+    DOING --> DONE : 直接完成
+    REVIEW --> DONE : 审查通过
+    REVIEW --> REJECTED : 审查未通过
+    REVIEW --> CANCELLED : 取消任务
+    BLOCKED --> DOING : 解除阻塞
+    BLOCKED --> ASSIGNED : 重新分配
+    BLOCKED --> CANCELLED : 取消任务
+    REJECTED --> ASSIGNED : 重新分配
+    REJECTED --> CANCELLED : 取消任务
+    DONE --> [*] : 完成
+    CANCELLED --> [*] : 取消
+```
+
+#### 3.4.3 合法转换规则
+
+状态转换遵循严格规则，防止非法状态变更：
+
+```java
+Map<String, Set<String>> VALID_TRANSITIONS = Map.of(
+    "CREATED",   Set.of("ASSIGNED", "CANCELLED"),
+    "ASSIGNED",  Set.of("DOING", "BLOCKED", "CANCELLED"),
+    "DOING",     Set.of("REVIEW", "BLOCKED", "CANCELLED", "DONE"),
+    "REVIEW",    Set.of("DONE", "REJECTED", "CANCELLED"),
+    "BLOCKED",   Set.of("DOING", "ASSIGNED", "CANCELLED"),
+    "REJECTED",  Set.of("ASSIGNED", "CANCELLED"),
+    "DONE",      Set.of(),
+    "CANCELLED", Set.of()
+);
+```
+
+### 3.5 状态更新机制
+
+#### 3.5.1 手动更新
+
+通过API端点 `/api/v1/tasks/{id}/state` 触发手动状态更新，支持直接转换或路径转换：
+
+- **直接转换**: 当两个状态之间存在直接转换关系时
+- **路径转换**: 当需要经过中间状态时，系统自动计算最短路径
+
+#### 3.5.2 自动同步
+
+AgentStatusSyncService 定时扫描 OpenClaw sessions，自动更新任务状态：
+
+- **定时扫描**: 每30秒扫描一次 agents 目录
+- **状态检测**: 基于会话更新时间判断任务状态
+- **自动流转**: 根据会话状态自动更新任务状态
+
+#### 3.5.3 自动完成逻辑
+
+系统实现智能任务完成机制，基于以下规则：
+
+- **aborted=true** → **DONE**: 会话被中断时自动标记为完成
+- **finishedAt>0** → **DONE**: 会话明确结束时标记为完成
+- **超过10分钟未更新** → **DONE**: 会话长时间无更新视为完成
+- **5分钟内活跃** → **DOING**: 会话近期有活动标记为执行中
+- **5-10分钟** → 检查session文件最后修改时间决定状态
+
+### 3.6 代码实现
+
+#### 3.6.1 TaskService.updateTaskStatus()
+
+核心状态更新方法，包含状态机校验逻辑：
+
+```java
+public Task updateTaskStatus(String taskId, String newStatus, String remark) {
+    Task task = taskRepository.findById(taskId)
+        .orElseThrow(() -> new TaskNotFoundException(taskId));
+
+    // 检查状态转换是否合法
+    if (!isValidTransition(task.getStatus(), newStatus)) {
+        throw new InvalidTaskTransitionException(task.getStatus(), newStatus);
+    }
+
+    // 记录流转
+    TaskFlow flow = new TaskFlow();
+    flow.setTaskId(taskId);
+    flow.setFromStatus(task.getStatus());
+    flow.setToStatus(newStatus);
+    flow.setRemark(remark);
+    flow.setCreatedAt(LocalDateTime.now());
+
+    task.setStatus(newStatus);
+    task.setUpdatedAt(LocalDateTime.now());
+
+    Task savedTask = taskRepository.save(task);
+    taskFlowRepository.save(flow);
+
+    return savedTask;
+}
+```
+
+#### 3.6.2 AgentStatusSyncService.syncSubagentTasks()
+
+自动同步服务，负责将OpenClaw会话状态同步到任务状态：
+
+```java
+private void syncSubagentTasks(String agentId, Path sessionsFile) {
+    // 检测subagent会话并创建/更新对应任务
+    // 实现自动完成逻辑
+    // 根据会话活跃度更新任务状态
+}
+```
+
+#### 3.6.3 状态机校验逻辑
+
+VALID_TRANSITIONS定义了合法的状态转换关系，确保任务状态只能按照预定义路径流转，防止非法状态变更。
+
 ### 3.4 认证机制
 
 当前版本采用无认证设计，适用于内部使用场景。如需增强安全性：
