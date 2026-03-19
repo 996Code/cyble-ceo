@@ -2,6 +2,7 @@ package com.ceo.dashboard.controller;
 
 import com.ceo.dashboard.entity.*;
 import com.ceo.dashboard.service.TaskService;
+import com.ceo.dashboard.service.SessionsSyncService;
 import com.ceo.dashboard.util.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -43,22 +44,22 @@ public class TaskController {
 
     /**
      * 查询任务列表（支持分页、时间范围过滤和归档状态）
+     * 统一返回格式：data 始终是数组，分页信息放在 extra 字段
      */
     @GetMapping
     public ApiResponse<?> getTasks(
             @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
             @RequestParam(required = false) Integer days,
-            @RequestParam(defaultValue = "false") Boolean includeArchived) {
+            @RequestParam(required = false) Boolean includeArchived) {
         try {
-            // 向后兼容：如果没传分页参数，返回全部任务
-            if (page == 0 && size == 20 && days == null && !includeArchived) {
-                List<Task> tasks = taskService.getAllTasks(status);
-                return ApiResponse.success(tasks);
-            } else {
-                // 使用分页和过滤
-                org.springframework.data.domain.Page<Task> pagedTasks = taskService.getTasks(status, page, size, days, includeArchived);
+            // 如果传了分页参数，使用分页
+            if (page != null || size != null) {
+                int pageNum = page != null ? page : 0;
+                int pageSize = size != null ? size : 20;
+                
+                org.springframework.data.domain.Page<Task> pagedTasks = taskService.getTasks(status, pageNum, pageSize, days, includeArchived);
                 
                 Map<String, Object> result = new HashMap<>();
                 result.put("content", pagedTasks.getContent());
@@ -68,6 +69,10 @@ public class TaskController {
                 result.put("size", pagedTasks.getSize());
                 
                 return ApiResponse.success(result);
+            } else {
+                // 不分页，返回全部任务
+                List<Task> tasks = taskService.getAllTasks(status, days, includeArchived);
+                return ApiResponse.success(tasks);
             }
         } catch (Exception e) {
             return ApiResponse.error("查询任务失败: " + e.getMessage());

@@ -771,12 +771,15 @@ public class AgentStatusSyncService {
                             changed = true;
                         }
                         
-                        // 检查会话是否已经结束（如果会话的finishedAt字段存在且不为0，说明会话已结束）
+                        // 检查会话是否已经结束
                         long finishedAt = sessionValue.path("finishedAt").asLong(0);
+                        boolean aborted = sessionValue.path("abortedLastRun").asBoolean(false);
                         String newStatus;
                         
-                        if (finishedAt > 0) {
-                            // 会话已明确结束，状态应为DONE
+                        // aborted 的会话立即标记为 DONE
+                        if (aborted) {
+                            newStatus = TASK_DONE_STATUS;
+                        } else if (finishedAt > 0) {
                             newStatus = TASK_DONE_STATUS;
                         } else {
                             // 会话未结束，根据ageMs判断状态
