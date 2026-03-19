@@ -159,7 +159,28 @@ public class AgentStatusSyncService {
      * 解析 Agent 状态
      */
     private AgentStatus parseAgentStatus(String agentId, Path sessionsFile) throws IOException {
-        String json = Files.readString(sessionsFile);
+        // 增加重试机制，避免读取不完整的 JSON（OpenClaw 可能正在写入）
+        String json = null;
+        int retries = 3;
+        while (retries > 0) {
+            try {
+                json = Files.readString(sessionsFile);
+                objectMapper.readTree(json);  // 测试 JSON 是否有效
+                break;  // JSON 有效，退出重试
+            } catch (com.fasterxml.jackson.core.JsonParseException e) {
+                // JSON 解析失败，等待 500ms 后重试
+                try { Thread.sleep(500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                retries--;
+                if (retries == 0) {
+                    log.warn("JSON 解析失败，文件可能正在写入：{}", sessionsFile);
+                    throw e;
+                }
+            }
+        }
+        
+        if (json == null) {
+            json = Files.readString(sessionsFile);
+        }
         JsonNode root = objectMapper.readTree(json);
 
         // 先从数据库中获取现有的 AgentStatus，以便保留其 updatedAt 时间
