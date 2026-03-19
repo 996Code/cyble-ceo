@@ -108,9 +108,17 @@ export default {
       try {
         // 对于已完成列，根据时间范围添加相应参数
         let url = '/api/v1/tasks'
+        const params = []
+        
+        // 添加时间范围参数（仅对已完成任务有意义）
         if (timeRange.value !== 'all') {
           const days = timeRange.value === '7days' ? 7 : 30
-          url += `?days=${days}`
+          params.push(`days=${days}`)
+        }
+        
+        // 添加查询参数
+        if (params.length > 0) {
+          url += '?' + params.join('&')
         }
         
         const response = await fetch(url)
@@ -148,6 +156,7 @@ export default {
       
       const cutoffTime = timeRange.value === '7days' ? sevenDaysAgo.value : thirtyDaysAgo.value
       return tasks.filter(task => {
+        // 只有当任务有完成时间时才进行时间范围过滤
         if (!task.completedAt) return true // 如果没有完成时间，则保留
         // 将时间字符串转换为时间戳进行比较
         const completedTime = new Date(task.completedAt).getTime()
@@ -157,7 +166,16 @@ export default {
     
     const getTasksByStatus = (statusString) => {
       const statuses = statusString.split(',')
-      let filteredTasks = tasks.value.filter(task => statuses.includes(task.status))
+      let filteredTasks = tasks.value.filter(task => {
+        // 过滤状态匹配的任务
+        const statusMatch = statuses.includes(task.status)
+        // 对于非DONE任务，排除已归档的任务
+        if (statusString !== 'DONE') {
+          return statusMatch && !task.archived
+        }
+        // 对于DONE任务，也要考虑是否已归档
+        return statusMatch && !task.archived
+      })
       
       // 如果是已完成任务，根据时间范围进一步过滤
       if (statusString === 'DONE') {
@@ -170,7 +188,16 @@ export default {
     // 获取指定状态的任务数量（用于显示徽章）
     const getTasksCountByStatus = (statusString) => {
       const statuses = statusString.split(',')
-      let allTasks = tasks.value.filter(task => statuses.includes(task.status))
+      let allTasks = tasks.value.filter(task => {
+        // 过滤状态匹配的任务
+        const statusMatch = statuses.includes(task.status)
+        // 对于非DONE任务，排除已归档的任务
+        if (statusString !== 'DONE') {
+          return statusMatch && !task.archived
+        }
+        // 对于DONE任务，也要考虑是否已归档
+        return statusMatch && !task.archived
+      })
       
       // 如果是已完成任务，计算总数用于显示徽章
       if (statusString === 'DONE') {
@@ -184,7 +211,16 @@ export default {
     // 获取过滤后已完成任务的数量
     const getFilteredTasksCountByStatus = (statusString) => {
       const statuses = statusString.split(',')
-      let filteredTasks = tasks.value.filter(task => statuses.includes(task.status))
+      let filteredTasks = tasks.value.filter(task => {
+        // 过滤状态匹配的任务
+        const statusMatch = statuses.includes(task.status)
+        // 对于非DONE任务，排除已归档的任务
+        if (statusString !== 'DONE') {
+          return statusMatch && !task.archived
+        }
+        // 对于DONE任务，也要考虑是否已归档
+        return statusMatch && !task.archived
+      })
       
       if (statusString === 'DONE') {
         filteredTasks = getFilteredDoneTasks(filteredTasks)
