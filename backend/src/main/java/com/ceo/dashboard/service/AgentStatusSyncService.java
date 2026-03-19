@@ -757,6 +757,12 @@ public class AgentStatusSyncService {
 
                     // 更新状态
                     if (existing != null) {
+                        // ✅ 任务已完成，不再更新（保留历史状态）
+                        if (TASK_DONE_STATUS.equals(existing.getStatus())) {
+                            log.debug("任务已完成，跳过更新：{} (status={})", existing.getId(), existing.getStatus());
+                            return;
+                        }
+                        
                         boolean changed = false;
                         
                         // 更新标题（如果还是默认的 Subagent Task: 前缀 或者标题为空）
@@ -791,28 +797,27 @@ public class AgentStatusSyncService {
                             log.info("更新现有任务: {} -> {} (状态: {})", existing.getId(), existing.getTitle(), existing.getStatus());
                         }
                     } else {
-                        // 创建新 OC- 任务
-                        String taskId = "OC-" + agentId + "-" + sessionId.substring(0, Math.min(8, sessionId.length()));
-                        Task task = new Task();
-                        task.setId(taskId);
-                        task.setSessionKey(sessionKey); // 设置sessionKey
-                        task.setTitle(taskName != null && !taskName.isEmpty() ? taskName : SUBAGENT_TASK_TITLE_PREFIX + sessionId);
-                        task.setAssignee(agentId);
-                        task.setCreator(AGENT_CREATOR);
-                        
-                        // 检查会话是否已经结束（如果会话的finishedAt字段存在且不为0，说明会话已结束）
+                        // 只为真正活跃的 session 创建新任务（5分钟内有更新）
+                        // 已结束(finishedAt>0)或不活跃(ageMs>5分钟)的 session 不创建新任务
+                        // 避免清空数据库后旧 session 被重新同步
                         long finishedAt = sessionValue.path("finishedAt").asLong(0);
-                        if (finishedAt > 0) {
-                            task.setStatus(TASK_DONE_STATUS);
-                        } else {
-                            task.setStatus(ageMs < FIVE_MINUTES_MS ? TASK_DOING_STATUS : TASK_DONE_STATUS); // 5分钟内更新的标记为DOING，否则为DONE
+                        boolean isActive = (finishedAt == 0) && (ageMs < FIVE_MINUTES_MS);
+                        
+                        if (isActive) {
+                            String taskId = "OC-" + agentId + "-" + sessionId.substring(0, Math.min(8, sessionId.length()));
+                            Task task = new Task();
+                            task.setId(taskId);
+                            task.setSessionKey(sessionKey);
+                            task.setTitle(taskName != null && !taskName.isEmpty() ? taskName : SUBAGENT_TASK_TITLE_PREFIX + sessionId);
+                            task.setAssignee(agentId);
+                            task.setCreator(AGENT_CREATOR);
+                            task.setStatus(TASK_DOING_STATUS);
+                            task.setCreatedAt(LocalDateTime.now());
+                            task.setUpdatedAt(LocalDateTime.now());
+                            taskRepository.save(task);
+                            
+                            log.info("创建新任务: {} -> {} (分配给: {})", taskId, task.getTitle(), agentId);
                         }
-                        
-                        task.setCreatedAt(LocalDateTime.now());
-                        task.setUpdatedAt(LocalDateTime.now());
-                        taskRepository.save(task);
-                        
-                        log.info("创建新任务: {} -> {} (分配给: {})", taskId, task.getTitle(), agentId);
                     }
                 }
             }
