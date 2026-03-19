@@ -183,6 +183,13 @@ export default {
         filteredTasks = getFilteredDoneTasks(filteredTasks)
       }
       
+      // 按 startedAt 倒序排序（新任务在前）
+      filteredTasks.sort((a, b) => {
+        const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0
+        const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0
+        return bTime - aTime
+      })
+      
       return filteredTasks
     }
     
