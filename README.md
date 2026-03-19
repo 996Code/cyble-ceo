@@ -2,11 +2,12 @@
 
 > 🤖 OpenClaw 多 Agent 协作监控看板 —— 像 CEO 一样掌控 AI 团队全局
 
-Cyble CEO Dashboard 是一个为 [OpenClaw](https://github.com/nicepkg/openclaw) 多 Agent 协作场景设计的实时监控面板。它能展示各 Agent 的任务状态、工作进度、日志和交互记录，让你一目了然地掌控 AI 团队的运作。
+**本项目由 OpenClaw 多 Agent 团队自主协作开发。** 从需求分析、架构设计、前后端开发、测试到部署，全程由 AI Agent 完成，CEO Agent 负责决策和验收。这不仅是一个产品，也是 OpenClaw 多 Agent 协作能力的真实验证。
 
 ![Tech Stack](https://img.shields.io/badge/Vue_3-4FC08D?style=flat&logo=vue.js&logoColor=white)
 ![Tech Stack](https://img.shields.io/badge/Spring_Boot_3-6DB33F?style=flat&logo=spring-boot&logoColor=white)
 ![Tech Stack](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Built By](https://img.shields.io/badge/Built_by-OpenClaw_Agents-ff6b6b?style=flat)
 
 ## ✨ 功能
 
@@ -18,7 +19,7 @@ Cyble CEO Dashboard 是一个为 [OpenClaw](https://github.com/nicepkg/openclaw)
 - 🚨 **告警横幅** — 自动检测异常 Agent 并高亮展示
 - 📈 **进度追踪** — 实时进度条展示任务完成度
 - 🗄️ **任务归档** — 已完成任务自动归档，看板保持清爽
-- 📄 **分页 & 时间过滤** — 大量数据轻松管理
+- 📄 **分页 & 时间过滤** — 大量任务数据轻松管理
 
 ## 🛠 技术栈
 
@@ -37,20 +38,44 @@ Cyble CEO Dashboard 是一个为 [OpenClaw](https://github.com/nicepkg/openclaw)
 - [Docker Compose](https://docs.docker.com/compose/install/) v2+
 - [OpenClaw](https://github.com/nicepkg/openclaw) 已安装并配置好 Agent
 
-### 一键启动
+### 一键部署
 
 ```bash
 git clone https://github.com/996Code/cyble-ceo.git
 cd cyble-ceo
 
-# 设置 OpenClaw agents 目录路径
-export OPENCLAW_AGENTS_PATH=/path/to/your/.openclaw/agents
-
-# 启动（首次会自动构建镜像，约 2-3 分钟）
-docker compose up -d
+# 运行一键搭建脚本（自动检测环境、生成配置、构建部署）
+chmod +x setup.sh
+./setup.sh
 ```
 
-启动后访问 **http://localhost** 即可看到 Dashboard。
+脚本会自动完成：
+1. ✅ 检查 Docker 环境
+2. ✅ 检测 OpenClaw agents 目录
+3. ✅ 生成 `.env` 配置文件
+4. ✅ 构建前后端 Docker 镜像
+5. ✅ 启动服务并等待健康检查
+
+完成后访问 **http://localhost** 即可看到 Dashboard。
+
+### 手动部署
+
+如果你更喜欢手动控制：
+
+```bash
+git clone https://github.com/996Code/cyble-ceo.git
+cd cyble-ceo
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env，设置 OPENCLAW_AGENTS_PATH 为你的 agents 目录路径
+
+# 构建并启动
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+```
 
 ### 环境变量
 
@@ -60,18 +85,13 @@ docker compose up -d
 | `DB_PASSWORD` | H2 数据库密码（可选） | _(空)_ |
 | `PORT` | 前端访问端口 | `80` |
 
-### 使用 `.env` 文件
-
-```bash
-cp .env.example .env
-# 编辑 .env 填入你的配置
-```
-
 ## 📁 项目结构
 
 ```
 cyble-ceo/
-├── docker-compose.yml          # 一键部署编排文件
+├── setup.sh                    # 一键环境搭建脚本
+├── docker-compose.yml          # 部署编排文件
+├── .env.example                # 环境变量模板
 ├── backend/                    # Spring Boot 后端
 │   ├── Dockerfile
 │   ├── pom.xml
@@ -90,26 +110,36 @@ cyble-ceo/
 └── docs/                       # API 文档
 ```
 
-## 🤖 OpenClaw Agent 配置
+## 🤖 关于 OpenClaw 多 Agent 协作
 
-Dashboard 需要配合 OpenClaw 的多 Agent 体系使用。项目提供了 7 个预设角色的配置模板：
+本项目展示了一种完整的 AI 团队协作模式。通过 [OpenClaw](https://github.com/nicepkg/openclaw)，多个 AI Agent 各司其职，像真实团队一样协作开发：
 
-| 角色 | 说明 |
+```
+CEO（决策） → Product Designer（需求） → Architect（架构）
+     ↓                                        ↓
+QA（测试）  ← Frontend Dev（前端） ← Backend Dev（后端）
+     ↓
+DevOps（部署）
+```
+
+### 参与开发的 Agent 角色
+
+| 角色 | 职责 |
 |------|------|
-| `ceo` | 最高决策者，分派任务、验收交付物 |
-| `architect` | 架构师，负责技术选型和架构设计 |
-| `backend-dev` | 后端开发，实现 API 和业务逻辑 |
-| `frontend-dev` | 前端开发，实现 UI 和交互 |
-| `product-designer` | 产品设计师，负责需求分析和原型设计 |
-| `qa-engineer` | 测试工程师，负责质量保障 |
-| `devops-engineer` | 运维工程师，负责部署和运维 |
+| 🎯 **CEO** | 战略决策、任务分派、验收交付物 |
+| 🎨 **Product Designer** | 需求分析、原型设计、PRD 编写 |
+| 🏗️ **Architect** | 技术选型、架构设计、代码审查 |
+| ⚙️ **Backend Dev** | API 开发、业务逻辑、数据库设计 |
+| 🖥️ **Frontend Dev** | UI 开发、交互实现、样式设计 |
+| 🧪 **QA Engineer** | 测试用例、自动化测试、回归验证 |
+| 🚀 **DevOps Engineer** | 容器化、部署配置、运维脚本 |
 
-### 使用配置模板
+项目在 `openclaw-config/templates/` 下提供了所有角色的配置模板，你可以直接复用来搭建自己的 AI 团队。
 
-将模板复制到对应 Agent 的 workspace 目录：
+### 使用 Agent 配置模板
 
 ```bash
-# 假设你的 OpenClaw workspace 在 ~/.openclaw/
+# 将模板复制到对应 Agent 的 workspace 目录
 cp -r openclaw-config/templates/ceo/* ~/.openclaw/workspace-ceo/
 cp -r openclaw-config/templates/backend-dev/* ~/.openclaw/workspace-backend-dev/
 # ... 其他角色同理
@@ -117,12 +147,12 @@ cp -r openclaw-config/templates/backend-dev/* ~/.openclaw/workspace-backend-dev/
 
 ## 📡 Agent 数据上报
 
-Agent 通过脚本向 Dashboard 上报状态。上报脚本在 `scripts/` 目录下。
+Agent 通过脚本向 Dashboard 上报状态和任务进度。
 
 ### 任务管理
 
 ```bash
-# 创建任务（自动流转到执行中）
+# 创建任务（支持一步到位指定状态）
 ./scripts/dashboard-task.sh create "T-001" "实现登录功能" "backend-dev"
 
 # 更新进度
@@ -136,7 +166,7 @@ Agent 通过脚本向 Dashboard 上报状态。上报脚本在 `scripts/` 目录
 ./scripts/dashboard-task.sh list DOING
 ```
 
-### 状态上报
+### Agent 状态上报
 
 ```bash
 # 上报心跳
@@ -172,13 +202,14 @@ npm run dev
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/v1/tasks` | 任务列表（支持分页、时间过滤） |
+| `GET` | `/api/v1/tasks` | 任务列表（支持 `page`/`size`/`days` 分页过滤） |
 | `POST` | `/api/v1/tasks` | 创建任务（支持 `initialStatus` 一步到位） |
 | `GET` | `/api/v1/tasks/{id}` | 任务详情（含流转记录和子任务） |
-| `PUT` | `/api/v1/tasks/{id}/state` | 更新任务状态 |
+| `PUT` | `/api/v1/tasks/{id}/state` | 更新任务状态（状态机校验） |
 | `PUT` | `/api/v1/tasks/{id}/progress` | 更新任务进度 |
 | `PUT` | `/api/v1/tasks/{id}/done` | 完成任务 |
-| `POST` | `/api/v1/tasks/archive` | 归档已完成任务 |
+| `POST` | `/api/v1/tasks/archive` | 归档已完成任务（软删除） |
+| `DELETE` | `/api/v1/tasks/clear-all` | 清空所有任务（仅开发环境） |
 | `GET` | `/api/v1/dashboard/overview` | 全局概览 |
 | `GET` | `/api/v1/dashboard/agents/{id}` | Agent 详情 |
 
@@ -192,7 +223,7 @@ CREATED → ASSIGNED → DOING → REVIEW → DONE
                     BLOCKED   REJECTED → ASSIGNED
                        ↓
                      DOING
-                     
+
 任何状态 → CANCELLED
 ```
 
@@ -202,5 +233,5 @@ MIT
 
 ## 🙏 致谢
 
-- [OpenClaw](https://github.com/nicepkg/openclaw) — 强大的多 Agent 协作框架
+- [OpenClaw](https://github.com/nicepkg/openclaw) — 多 Agent 协作框架，也是本项目的开发者
 - [Vue 3](https://vuejs.org/) + [Spring Boot](https://spring.io/projects/spring-boot) — 可靠的技术栈
